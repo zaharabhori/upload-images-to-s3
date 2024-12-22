@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const AWS = require('aws-sdk');
 const path = require('path');
@@ -12,7 +13,7 @@ dotenv.config();
 AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,  // Use the environment variable
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,  // Use the environment variable
-    region: 'ap-south-1',  // Use the environment variable
+    region: process.env.AWS_REGION,  // Use the environment variable
 });
 
 const s3 = new AWS.S3();
@@ -26,7 +27,7 @@ app.get('/generate-presigned-url', (req, res) => {
     const fileType = req.query.filetype;
 
     const params = {
-        Bucket: 'crumbcoat.bucket',  // Your S3 bucket name
+        Bucket: process.env.AWS_BUCKET,  // Your S3 bucket name
         Key: `${Date.now()}-${fileName}`, // Unique file name
         Expires: 3600, // URL expires in 5 minutes
         ContentType: fileType, // Content type of the file
