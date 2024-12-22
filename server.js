@@ -27,8 +27,8 @@ app.get('/generate-presigned-url', (req, res) => {
 
     const params = {
         Bucket: 'crumbcoat.bucket',  // Your S3 bucket name
-        Key: `pics/${Date.now()}-${fileName}`, // Unique file name
-        Expires: 60 * 5, // URL expires in 5 minutes
+        Key: `${Date.now()}-${fileName}`, // Unique file name
+        Expires: 3600, // URL expires in 5 minutes
         ContentType: fileType, // Content type of the file
     };
 
@@ -39,6 +39,49 @@ app.get('/generate-presigned-url', (req, res) => {
         res.json({ url });
     });
 });
+
+app.get('/generate-access-url', (req, res) => {
+    const { key } = req.query;
+
+    if (!key) {
+        return res.status(400).json({ error: 'Key is required' });
+    }
+
+    const params = {
+        Bucket: 'crumbcoat.bucket', // Your S3 bucket name
+        Key: key, // Object key (path + name)
+        Expires: 3600, // URL valid for 1 hour
+    };
+
+    s3.getSignedUrl('getObject', params, (err, url) => {
+        if (err) {
+            console.error('Error generating pre-signed URL for access:', err);
+            return res.status(500).json({ error: 'Error generating pre-signed URL for access' });
+        }
+        res.json({ url });
+    });
+});
+
+// Route to list all objects in the bucket
+app.get('/list-images', async (req, res) => {
+    try {
+        const params = {
+            Bucket: 'crumbcoat.bucket',
+            //Prefix: 'pics/', // Folder where the images are stored
+        };
+
+        const data = await s3.listObjectsV2(params).promise();
+
+        // Construct public URLs for each file
+        const imageUrls = data.Contents.map((item) => item.Key);
+
+        res.json({ imageUrls });
+    } catch (error) {
+        console.error('Error listing objects:', error);
+        res.status(500).json({ error: 'Failed to list images' });
+    }
+});
+
 
 // Start the server
 app.listen(port, () => {
